@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中科视界 · 管理后台</title>
+<style>
+:root{--primary:#0066ff;--dark:#0a1628;--text:#1a2332;--muted:#5f7189;--line:#e5ecf5;--bg:#f6f9fd}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--text);padding:32px 20px}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:22px;font-weight:800;color:var(--dark);margin-bottom:6px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:9px 18px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;border:1px solid var(--line);color:var(--muted)}
+.tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.btn{padding:9px 18px;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;background:var(--primary);color:#fff}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
+.btn.danger{background:#e23b3b}
+.btn.sm{padding:6px 12px;font-size:12.5px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f3f7fd;color:var(--dark);font-weight:700;white-space:nowrap}
+td{color:var(--text);max-width:360px;word-break:break-word}
+.cat{display:inline-block;font-size:12px;color:var(--primary);background:rgba(0,102,255,.09);padding:2px 9px;border-radius:6px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.login{background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px;max-width:420px;margin:60px auto;text-align:center}
+.login input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;font-size:14px;margin:12px 0}
+.login .tip{color:var(--muted);font-size:12.5px;margin-top:14px}
+.err{color:#e23b3b;font-size:13px;min-height:18px}
+.count{font-size:13px;color:var(--muted);margin-left:auto}
+.tabpane{display:none}
+.tabpane.active{display:block}
+/* 表单弹窗 */
+.overlay{position:fixed;inset:0;background:rgba(6,16,31,.55);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:560px;padding:26px 26px 22px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.modal h3{font-size:18px;margin-bottom:16px}
+.frow{margin-bottom:14px}
+.frow label{display:block;font-size:13px;color:var(--dark);font-weight:600;margin-bottom:6px}
+.frow input,.frow select,.frow textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;background:#fbfdff}
+.frow textarea{resize:vertical;min-height:72px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.modal-tip{font-size:13px;color:#e23b3b;min-height:16px;margin-top:6px;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>中科视界 · 管理后台</h1>
+  <div class="sub">需求线索、注册用户、新闻资讯、案例中心、产品中心 的统一管理（增删查改）。</div>
+  <div id="app"></div>
+</div>
+
+<!-- 表单弹窗 -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <h3 id="modalTitle">编辑</h3>
+    <form id="crudForm"></form>
+    <div class="modal-tip" id="modalTip"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" type="button" id="modalCancel">取消</button>
+      <button class="btn" type="button" id="modalSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var KEY = '';
+var CURRENT = 'inquiries';
+var app = document.getElementById('app');
+
+var ENTITIES = {
+  inquiries: {
+    label: '需求线索', create: false,
+    listApi: function () { return '/api/inquiries?key=' + encodeURIComponent(KEY); },
+    fields: [
+      { k: 'name', label: '姓名' },
+      { k: 'phone', label: '电话' },
+      { k: 'company', label: '公司' },
+      { k: 'email', label: '邮箱' },
+      { k: 'category', label: '类别', type: 'select', options: ['3C电子', '电阻电容', '编带包装', '其他'] },
+      { k: 'message', label: '需求', type: 'textarea' },
+      { k: 'status', label: '状态', type: 'select', options: ['待跟进', '已联系', '已成交'] }
+    ]
+  },
+  users: {
+    label: '注册用户', create: true,
+    listApi: function () { return '/api/users?key=' + encodeURIComponent(KEY); },
+    fields: [
+      { k: 'name', label: '姓名' },
+      { k: 'phone', label: '手机号' },
+      { k: 'password', label: '密码', type: 'password', hint: '新建必填(6-20位)；编辑留空表示不修改' }
+    ]
+  },
+  news: {
+    label: '新闻资讯', create: true,
+    listApi: function () { return '/api/news'; },
+    fields: [
+      { k: 'tag', label: '标签' },
+      { k: 'title', label: '标题' },
+      { k: 'desc', label: '摘要', type: 'textarea' },
+      { k: 'date', label: '日期 (YYYY-MM-DD)' }
+    ]
+  },
+  cases: {
+    label: '案例中心', create: true,
+    listApi: function () { return '/api/cases'; },
+    fields: [
+      { k: 'category', label: '类别' },
+      { k: 'title', label: '标题' },
+      { k: 'desc', label: '描述', type: 'textarea' },
+      { k: 'icon', label: '图标', type: 'select', options: ['chip', 'cap', 'ai', 'camera', 'gear', 'tape'] },
+      { k: 'metrics', label: '指标 JSON', type: 'metrics', hint: '格式: [{"value":"99.8%","label":"检出率"}]' }
+    ]
+  },
+  products: {
+    label: '产品中心', create: true,
+    listApi: function () { return '/api/products'; },
+    fields: [
+      { k: 'title', label: '标题' },
+      { k: 'desc', label: '描述', type: 'textarea' },
+      { k: 'tags', label: '标签', type: 'tags', hint: '用英文逗号分隔，如: 连接器,PCB/FPC' },
+      { k: 'icon', label: '图标', type: 'select', options: ['chip', 'cap', 'ai', 'camera', 'gear', 'tape'] },
+      { k: 'image', label: '图片路径', hint: '如 images/machine.jpg（选填，填写后卡片显示图片）' }
+    ]
+  }
+};
+
+function api(path) { return fetch(path, { cache: 'no-store' }).then(function (r) { return r.json(); }); }
+function esc(s) {
+  return (s == null ? '' : ('' + s)).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function cellValue(entity, field, item) {
+  var v = item[field.k];
+  if (field.type === 'tags' && Array.isArray(v)) return v.map(function (t) { return '<span class="cat">' + esc(t) + '</span>'; }).join(' ');
+  if (field.type === 'metrics' && Array.isArray(v)) return v.map(function (m) { return esc(m.value) + ' ' + esc(m.label); }).join('<br>');
+  if (field.type === 'select') return '<span class="cat">' + esc(v) + '</span>';
+  return esc(v);
+}
+
+function showLogin(msg) {
+  app.innerHTML =
+    '<div class="login">' +
+      '<h1 style="font-size:18px;margin-bottom:4px">请输入管理口令</h1>' +
+      '<input id="keyInput" type="password" placeholder="管理口令" autocomplete="off">' +
+      '<button class="btn" id="loginBtn" style="width:100%">进入</button>' +
+      '<div class="err" id="loginErr">' + (msg || '') + '</div>' +
+      '<div class="tip">默认口令 admin123，可通过环境变量 ADMIN_TOKEN 修改</div>' +
+    '</div>';
+  var input = document.getElementById('keyInput');
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+  input.focus();
+}
+function doLogin() {
+  KEY = document.getElementById('keyInput').value.trim();
+  if (!KEY) return;
+  load();
+}
+
+function load() {
+  api(ENTITIES[CURRENT].listApi()).then(function (j) {
+    if (!j.ok) { showLogin(j.msg === '未授权' ? '口令错误' : (j.msg || '加载失败')); return; }
+    render(j);
+  }).catch(function () { showLogin('加载失败，请确认后端已启动'); });
+}
+
+function render(data) {
+  var ent = ENTITIES[CURRENT];
+  var items = data.items || [];
+  var headers = ent.fields.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join('') + '<th>操作</th>';
+
+  var rows = items.map(function (it) {
+    var tds = ent.fields.map(function (f) { return '<td>' + cellValue(ent, f, it) + '</td>'; }).join('');
+    var acts = '<td><button class="btn ghost sm" data-edit="' + esc(it.id) + '">编辑</button> ';
+    acts += '<button class="btn danger sm" data-del="' + esc(it.id) + '">删除</button>';
+    acts += '</td>';
+    return '<tr>' + tds + acts + '</tr>';
+  }).join('');
+
+  app.innerHTML =
+    '<div class="tabs">' + Object.keys(ENTITIES).map(function (k) {
+      return '<div class="tab' + (k === CURRENT ? ' active' : '') + '" data-tab="' + k + '">' + ENTITIES[k].label + '</div>';
+    }).join('') + '</div>' +
+    '<div class="toolbar">' +
+      (ent.create ? '<button class="btn" id="createBtn">+ 新建</button>' : '') +
+      '<button class="btn ghost" id="refreshBtn">刷新</button>' +
+      '<button class="btn ghost" id="exportBtn">导出 CSV</button>' +
+      '<span class="count">共 ' + items.length + ' 条</span>' +
+    '</div>' +
+    '<div class="card"><div class="card-scroll"><table><thead><tr>' + headers + '</tr></thead><tbody>' +
+    (rows || '<tr><td colspan="' + (ent.fields.length + 1) + '" class="empty">暂无数据</td></tr>') +
+    '</tbody></table></div></div>';
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      CURRENT = t.dataset.tab;
+      load();
+    });
+  });
+  if (ent.create) document.getElementById('createBtn').addEventListener('click', function () { openForm(null); });
+  document.getElementById('refreshBtn').addEventListener('click', load);
+  document.getElementById('exportBtn').addEventListener('click', exportCsv);
+  app.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { openForm(items.filter(function (x) { return x.id === b.dataset.edit; })[0] || null); }); });
+  app.querySelectorAll('[data-del]').forEach(function (b) { b.addEventListener('click', function () { del(b.dataset.del); }); });
+}
+
+function openForm(item) {
+  var ent = ENTITIES[CURRENT];
+  document.getElementById('modalTitle').textContent = item ? ('编辑 · ' + ent.label) : ('新建 · ' + ent.label);
+  var form = document.getElementById('crudForm');
+  form.innerHTML = ent.fields.map(function (f) {
+    var val = item ? (item[f.k] != null ? item[f.k] : '') : '';
+    var cur = '';
+    if (f.type === 'textarea') {
+      cur = '<textarea name="' + f.k + '" placeholder="' + (f.hint || '') + '">' + esc(Array.isArray(val) ? JSON.stringify(val) : val) + '</textarea>';
+    } else if (f.type === 'select') {
+      cur = '<select name="' + f.k + '">' + f.options.map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+    } else     if (f.type === 'tags') {
+      cur = '<input name="' + f.k + '" value="' + esc(Array.isArray(val) ? val.join(',') : val) + '" placeholder="' + (f.hint || '') + '">';
+    } else if (f.type === 'password') {
+      cur = '<input type="password" name="' + f.k + '" value="" autocomplete="new-password" placeholder="' + (f.hint || '') + '">';
+    } else if (f.type === 'metrics') {
+      cur = '<textarea name="' + f.k + '" placeholder="' + (f.hint || '') + '">' + esc(Array.isArray(val) ? JSON.stringify(val) : val) + '</textarea>';
+    } else {
+      cur = '<input name="' + f.k + '" value="' + esc(val) + '">';
+    }
+    return '<div class="frow"><label>' + esc(f.label) + (f.hint && (f.type === 'tags' || f.type === 'metrics') ? ' <small style="color:var(--muted);font-weight:400">(' + esc(f.hint) + ')</small>' : '') + '</label>' + cur + '</div>';
+  }).join('');
+  document.getElementById('modalTip').textContent = '';
+  document.getElementById('overlay').classList.add('open');
+
+  document.getElementById('modalSave').onclick = function () { saveForm(item); };
+}
+function closeForm() { document.getElementById('overlay').classList.remove('open'); }
+
+function saveForm(item) {
+  var ent = ENTITIES[CURRENT];
+  var form = document.getElementById('crudForm');
+  var payload = {};
+  var ok = true, tip = '';
+  ent.fields.forEach(function (f) {
+    var raw = form.elements[f.k].value;
+    if (f.type === 'tags') {
+      payload[f.k] = raw.split(/[,，]/).map(function (s) { return s.trim(); }).filter(Boolean);
+    } else if (f.type === 'metrics') {
+      try { payload[f.k] = raw.trim() ? JSON.parse(raw) : []; }
+      catch (e) { ok = false; tip = '指标 JSON 格式错误'; }
+    } else {
+      payload[f.k] = raw;
+    }
+  });
+  if (ok && CURRENT === 'users' && !item && !(payload.password || '').trim()) {
+    ok = false; tip = '新建用户必须设置密码（6-20 位）';
+  }
+  if (!ok) { document.getElementById('modalTip').textContent = tip; return; }
+
+  var url = item ? ('/api/admin/' + CURRENT + '/' + encodeURIComponent(item.id))
+                 : ('/api/admin/' + CURRENT);
+  fetch(url, {
+    method: item ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    if (j.ok) { closeForm(); load(); }
+    else document.getElementById('modalTip').textContent = j.msg || '保存失败';
+  }).catch(function () { document.getElementById('modalTip').textContent = '网络错误'; });
+}
+
+function del(id) {
+  if (!confirm('确定删除该记录？')) return;
+  fetch('/api/admin/' + CURRENT + '/' + encodeURIComponent(id) + '?key=' + encodeURIComponent(KEY), { method: 'DELETE' })
+    .then(function (r) { return r.json(); }).then(function (j) { if (j.ok) load(); else alert(j.msg || '删除失败'); })
+    .catch(function () { alert('网络错误'); });
+}
+
+function exportCsv() {
+  api(ENTITIES[CURRENT].listApi()).then(function (j) {
+    if (!j.ok || !j.items) return;
+    var ent = ENTITIES[CURRENT];
+    var head = ent.fields.map(function (f) { return f.label; });
+    var lines = [head.join(',')];
+    j.items.forEach(function (it) {
+      lines.push(ent.fields.map(function (f) {
+        var v = it[f.k];
+        if (Array.isArray(v)) v = JSON.stringify(v);
+        var s = ('' + (v == null ? '' : v)).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? '"' + s + '"' : s;
+      }).join(','));
+    });
+    var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = CURRENT + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+}
+
+document.getElementById('modalCancel').addEventListener('click', closeForm);
+document.getElementById('overlay').addEventListener('click', function (e) { if (e.target === this) closeForm(); });
+
+showLogin('');
+</script>
+</body>
+</html>

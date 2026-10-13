@@ -1,0 +1,35 @@
+[
+  {
+    "id": "c1",
+    "category": "3C电子",
+    "title": "3C连接器 PIN针缺失 / 歪针检测",
+    "desc": "针对高密度连接器，实现PIN针缺失、歪斜、共面度与间距的在线高速检测。",
+    "metrics": [
+      { "value": "99.8%", "label": "检出率" },
+      { "value": "1200", "label": "pcs/min" }
+    ],
+    "icon": "chip"
+  },
+  {
+    "id": "c2",
+    "category": "电阻电容",
+    "title": "贴片电阻外观缺陷与尺寸检测",
+    "desc": "检测崩缺、裂纹、划伤、电极不良，并同步测量长宽厚与电极尺寸。",
+    "metrics": [
+      { "value": "±0.005", "label": "mm 精度" },
+      { "value": "3000", "label": "pcs/min" }
+    ],
+    "icon": "cap"
+  },
+  {
+    "id": "c3",
+    "category": "编带包装",
+    "title": "电阻电容编带空料 / 反向检测",
+    "desc": "对接编带机在线运行，识别空料、反向、叠料并自动计数与剔除。",
+    "metrics": [
+      { "value": "0 漏检", "label": "空料反向" },
+      { "value": "24h", "label": "连续运行" }
+    ],
+    "icon": "tape"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "b15e4bbcb7954fbd86b899a312b6fee2",
+    "name": "\u5434\u5F66\u7956",
+    "phone": "19119875973",
+    "passwordHash": "Gr3Qf67oT0IulIoWMbJg4abkybEwh5/CVK5kUZwiylA=",
+    "passwordSalt": "LxHnAsc\u002BffHqiLuUnn7N7Q==",
+    "createdAt": "2026-10-13T09:31:27.1918335Z"
+  },
+  {
+    "id": "63724da633e14559b3f4b0116001208e",
+    "name": "\u674E\u56DB",
+    "phone": "15236459999",
+    "passwordHash": "ARldpK4A4dHKKfgIx/hmJQfi7J0tNFEGjF4v8EUrPzA=",
+    "passwordSalt": "qLujt2IX8Lh4fBeNjcGygQ==",
+    "createdAt": "2026-10-13T12:19:56.5468322Z"
+  },
+  {
+    "id": "b0a0635eba284914907e371e5f2ad4e0",
+    "name": "\u7231\u601D",
+    "phone": "16673906435",
+    "passwordHash": "/9bxGQC3SfY3iuZWX7zLgW2SJreX99T0CLG9HIh0Qrw=",
+    "passwordSalt": "kYpJvpGCrVuHdpHkBUCXFw==",
+    "createdAt": "2026-10-13T12:23:03.7870518Z"
+  }
+]
